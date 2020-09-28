@@ -11,8 +11,9 @@ class UniProtMapper:
         """For mapping of protein IDs to another ID. Uses UniProt API.
         for valid parameters see: https://www.uniprot.org/help/api_idmapping
 
-        :param from_id:
-        :param to_id:
+        :example: gi2uniprotmapping =  UniprotMapper("P_GI", "ACC") # This class mapps form GI-number to Uniprot IDs
+        :param from_id: origin ID string
+        :param to_id: target ID string
         """
         self._from_id = from_id
         self._to_id = to_id
@@ -37,21 +38,23 @@ class UniProtMapper:
             r_dict_list.append(dict(zip(header_items, line_items)))
         return r_dict_list
 
-    def map_protein_ids(self, protein_list: List[str], chunk_size: int = 500):
+    def map_protein_ids(self, protein_list: List[str], chunk_size: int = 500) -> pd.DataFrame:
         final_dict_list = []
 
         pbar = tqdm(total=len(protein_list))
-        for i in range(0, len(protein_list), chunk_size):
-            chunk = protein_list[i:i + chunk_size]
-            chunklist = "+".join(chunk)
-            base_url = "https://www.uniprot.org/uploadlists/"
-            server_query = f"?from={self._from_id}&to={self._to_id}&format={self._data_format}&query={chunklist}"
-            req = "".join([base_url, server_query])
-            server_response = self._query(req)
-            server_response_formatted = self._response2dictlist(server_response)
-            final_dict_list.extend(server_response_formatted)
-            pbar.update(len(chunk))
-        pbar.close()
+        try:
+            for i in range(0, len(protein_list), chunk_size):
+                chunk = protein_list[i:i + chunk_size]
+                chunklist = "+".join(chunk)
+                base_url = "https://www.uniprot.org/uploadlists/"
+                server_query = f"?from={self._from_id}&to={self._to_id}&format={self._data_format}&query={chunklist}"
+                req = "".join([base_url, server_query])
+                server_response = self._query(req)
+                server_response_formatted = self._response2dictlist(server_response)
+                final_dict_list.extend(server_response_formatted)
+                pbar.update(len(chunk))
+        finally:
+            pbar.close()
         valid_mappings = pd.DataFrame(final_dict_list)
         invalid_ids = set(protein_list) - set(valid_mappings["From"].unique())
         invalid_mapping = pd.DataFrame()
