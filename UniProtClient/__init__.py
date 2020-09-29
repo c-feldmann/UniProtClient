@@ -1,2 +1,3 @@
-from .apiclasses import UniProtMapper
-from .apiclasses import UniProtProteinInfo
+from .ClientClasses import UniProtMapper
+from .ClientClasses import UniProtProteinInfo
+
