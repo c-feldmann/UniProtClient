@@ -4,6 +4,7 @@ import urllib.parse
 import urllib.request
 import numpy as np
 from typing import *
+from time import sleep
 
 
 class _UniProtClient:
@@ -41,9 +42,17 @@ class UniProtMapper(_UniProtClient):
         """For mapping of protein IDs to another ID. Uses UniProt API.
         for valid parameters see: https://www.uniprot.org/help/api_idmapping
 
-        :example: gi2uniprotmapping =  UniProtMapper("P_GI", "ACC") # This class mapps form GI-number to Uniprot IDs
-        :param from_id: origin ID string
-        :param to_id: target ID string
+        :param to_id:
+
+        Parameters
+        ----------
+        from_id: origin ID string
+        to_id: target ID string
+
+        Examples
+        ________
+        gi2uniprotmapping =  UniProtMapper("P_GI", "ACC") # This class mapps form GI-number to Uniprot IDs
+
         """
         super().__init__("https://www.uniprot.org/uploadlists/")
         self._from_id = from_id
@@ -114,17 +123,31 @@ def simle_name_from(long_name):
 
 
 class UniProtProteinInfo(_UniProtClient):
+    """
+    TODO: Find out why UniProt returns duplicate rows.
+    """
     def __init__(self, column_list: Optional[List[str]] = None):
+        """
+
+        Parameters
+        ----------
+        column_list: strings of column identifiers. [1]
+
+
+        ..References
+        ..__________
+        [1] https://www.uniprot.org/help/uniprotkb%5Fcolumn%5Fnames
+        """
         super().__init__("https://www.uniprot.org/uniprot/")
         if column_list is None:
             column_list = ["id", "entry_name", "protein_names", "families", "organism", "ec", "genes(PREFERRED)",
                            "go(molecular_function)"]
         self.columns = ",".join(column_list)
 
-    def load_protein_info(self, protein_list: List[str]):
+    def load_protein_info(self, protein_list: List[str], chunk_size: int = 200, sleeptime=0):
         final_dict_list = []
         with tqdm(total=len(protein_list)) as p_bar:
-            for protein_chunk in self._chunkwise(protein_list, 200):
+            for protein_chunk in self._chunkwise(protein_list, chunk_size):
                 joined_proteins = "+OR+".join(protein_chunk)
                 server_query = f"?query=accession:{joined_proteins}&format=tab&columns={self.columns}"
                 req = "".join([self._base_url, server_query])
@@ -132,6 +155,7 @@ class UniProtProteinInfo(_UniProtClient):
                 server_response_formatted = self._response2dictlist(server_response)
                 final_dict_list.extend(server_response_formatted)
                 p_bar.update(len(protein_chunk))
+                sleep(sleeptime)
 
         valid_mappings = pd.DataFrame(final_dict_list)
         if "protein_names" in self.columns:
@@ -140,5 +164,5 @@ class UniProtProteinInfo(_UniProtClient):
         invalid_mapping = pd.DataFrame()
         invalid_mapping["Entry"] = sorted(invalid_ids)
 
-        return pd.concat([valid_mappings, invalid_mapping])
-
+        # For some reason the data returned from UniProt contains duplicates. Potential Error in query?
+        return pd.concat([valid_mappings, invalid_mapping]).drop_duplicates()
