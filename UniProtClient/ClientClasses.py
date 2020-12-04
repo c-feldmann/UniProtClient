@@ -82,7 +82,7 @@ class UniProtMapper(_UniProtClient):
         return pd.concat([valid_mappings, invalid_mapping])
 
 
-def simle_name_from(long_name):
+def simple_name_from(long_name):
     """ Extracts primary name from uniprot string containing all names.
 
     Additional names are given in brackets and parantheses
@@ -123,8 +123,7 @@ def simle_name_from(long_name):
 
 
 class UniProtProteinInfo(_UniProtClient):
-    """
-    TODO: Find out why UniProt returns duplicate rows.
+    """ A class for information retrieval about proteins form UniProt.
     """
     def __init__(self, column_list: Optional[List[str]] = None):
         """
@@ -134,21 +133,37 @@ class UniProtProteinInfo(_UniProtClient):
         column_list: strings of column identifiers. [1]
 
 
-        ..References
-        ..__________
+        References
+        __________
         [1] https://www.uniprot.org/help/uniprotkb%5Fcolumn%5Fnames
         """
         super().__init__("https://www.uniprot.org/uniprot/")
         if column_list is None:
             column_list = ["id", "entry_name", "protein_names", "families", "organism", "ec", "genes(PREFERRED)",
                            "go(molecular_function)"]
+        column_list = [self._reformat_column_string(col_id, lower=False) for col_id in column_list]
+        if "id" not in column_list:
+            column_list.append("id")
         self.columns = ",".join(column_list)
 
-    def load_protein_info(self, protein_list: List[str], chunk_size: int = 200, sleeptime=0):
+    @staticmethod
+    def _reformat_column_string(column_name: str, lower=True) -> str:
+        """ A cheap and hacky string formatting procedure replacing spaces with underscores"""
+        column_name_reformat = column_name
+        while "  " in column_name_reformat:
+            column_name_reformat = column_name_reformat.replace("  ", " ")
+        column_name_reformat = column_name_reformat.replace(" (", "(")
+        column_name_reformat = column_name_reformat.replace(" )", ")")
+        column_name_reformat = column_name_reformat.replace(" ", "_")
+        if lower:
+            column_name_reformat = column_name_reformat.lower()
+        return column_name_reformat
+
+    def load_protein_info(self, protein_list: List[str], chunk_size: int = 200, sleeptime=0) -> pd.DataFrame:
         final_dict_list = []
         with tqdm(total=len(protein_list)) as p_bar:
             for protein_chunk in self._chunkwise(protein_list, chunk_size):
-                joined_proteins = "+OR+".join(protein_chunk)
+                joined_proteins = "+OR+accession:".join(protein_chunk)
                 server_query = f"?query=accession:{joined_proteins}&format=tab&columns={self.columns}"
                 req = "".join([self._base_url, server_query])
                 server_response = self._query(req)
@@ -157,12 +172,15 @@ class UniProtProteinInfo(_UniProtClient):
                 p_bar.update(len(protein_chunk))
                 sleep(sleeptime)
 
-        valid_mappings = pd.DataFrame(final_dict_list)
+        valid_entry_df = pd.DataFrame(final_dict_list)
         if "protein_names" in self.columns:
-            valid_mappings["prefered_name"] = valid_mappings["Protein names"].apply(simle_name_from)
-        invalid_ids = set(protein_list) - set(valid_mappings["Entry"].unique())
-        invalid_mapping = pd.DataFrame()
-        invalid_mapping["Entry"] = sorted(invalid_ids)
+            valid_entry_df["primary_name"] = valid_entry_df["Protein names"].apply(simple_name_from)
+        invalid_ids = set(protein_list) - set(valid_entry_df["Entry"].unique())
+        invalid_entry_df = pd.DataFrame()
+        invalid_entry_df["Entry"] = sorted(invalid_ids)
 
-        # For some reason the data returned from UniProt contains duplicates. Potential Error in query?
-        return pd.concat([valid_mappings, invalid_mapping]).drop_duplicates()
+        combined_df = pd.concat([valid_entry_df, invalid_entry_df])
+        column_name_mapping = {old_name: self._reformat_column_string(old_name) for old_name in combined_df.columns}
+        combined_df.rename(columns=column_name_mapping, inplace=True)
+        combined_df.set_index("entry", inplace=True)
+        return combined_df
