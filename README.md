@@ -46,7 +46,6 @@ mapping_df
 
 
 <div>
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -78,7 +77,7 @@ mapping_df
 
 
 ### Protein information
-UniProt provides a varity of protein specific information, such as protein family, organism, function, EC-number, and many more.
+UniProt provides a variety of protein specific information, such as protein family, organism, function, EC-number, and many more.
 The class *UniProtProteinInfo* is initialized with [column identifier](https://www.uniprot.org/help/uniprotkb%5Fcolumn%5Fnames) specifing the requested information. Spaces in column names should be substituted by underscores.  
 If no columns are specified the default is used:
 
