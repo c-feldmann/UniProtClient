@@ -3,6 +3,7 @@ from tqdm import tqdm
 import urllib.parse
 import urllib.request
 import numpy as np
+import socket
 import sys
 from typing import *
 from time import sleep
@@ -14,9 +15,13 @@ class _UniProtClient:
 
     @staticmethod
     def _query(query_string) -> str:
-        with urllib.request.urlopen(query_string) as f:
-            response = f.read()
-        return response.decode('utf-8')
+        for i in range(10):
+            try:
+                with urllib.request.urlopen(query_string) as f:
+                    response = f.read()
+                return response.decode('utf-8')
+            except socket.error:
+                sleep(i*10)
 
     @staticmethod
     def _response2dictlist(response_string) -> List[dict]:
