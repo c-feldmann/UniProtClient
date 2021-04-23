@@ -20,7 +20,7 @@ class _UniProtClient:
                 with urllib.request.urlopen(query_string) as f:
                     response = f.read()
                 return response.decode('utf-8')
-            except socket.error:
+            except ConnectionResetError:
                 sleep(i*10)
 
     @staticmethod
