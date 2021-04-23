@@ -3,6 +3,7 @@ from tqdm import tqdm
 import urllib.parse
 import urllib.request
 import numpy as np
+import sys
 from typing import *
 from time import sleep
 
@@ -174,7 +175,15 @@ class UniProtProteinInfo(_UniProtClient):
 
         valid_entry_df = pd.DataFrame(final_dict_list)
         if "protein_names" in self.columns:
-            valid_entry_df["primary_name"] = valid_entry_df["Protein names"].apply(simple_name_from)
+            name_list = []
+            for idx, row in valid_entry_df.iterrows():
+                try:
+                    primary_name = simple_name_from(row["Protein names"])
+                except AssertionError as err:
+                    primary_name = None
+                    print("{}: {}".format(row["Enty"], err), file=sys.stderr)
+                name_list.append(primary_name)
+            valid_entry_df["primary_name"] = name_list
         invalid_ids = set(protein_list) - set(valid_entry_df["Entry"].unique())
         invalid_entry_df = pd.DataFrame()
         invalid_entry_df["Entry"] = sorted(invalid_ids)
