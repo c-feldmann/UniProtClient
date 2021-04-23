@@ -1,9 +1,7 @@
 import pandas as pd
 from tqdm import tqdm
-import urllib.parse
-import urllib.request
+import requests
 import numpy as np
-import socket
 import sys
 from typing import *
 from time import sleep
@@ -17,9 +15,8 @@ class _UniProtClient:
     def _query(query_string) -> str:
         for i in range(10):
             try:
-                with urllib.request.urlopen(query_string) as f:
-                    response = f.read()
-                return response.decode('utf-8')
+                response = requests.get(query_string)
+                return response.text
             except ConnectionResetError:
                 sleep(i*10)
 
