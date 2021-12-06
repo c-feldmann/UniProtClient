@@ -1,5 +1,5 @@
 import pandas as pd
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import requests
 import numpy as np
 import sys
