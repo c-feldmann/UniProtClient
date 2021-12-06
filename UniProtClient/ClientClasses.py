@@ -5,6 +5,7 @@ import numpy as np
 import sys
 from typing import *
 from time import sleep
+import warnings as warn
 
 
 class _UniProtClient:
@@ -120,8 +121,9 @@ def simple_name_from(long_name):
                     out.append(letter)
             else:
                 buffer.append(letter)
-    assert in_bracket == 0
-    assert in_square_bracket == 0
+    if in_bracket != 0 or in_square_bracket != 0:
+        warn.warn(f"Error processing: {long_name}\n Returning input name!")
+        return long_name
     return "".join(out)
 
 
