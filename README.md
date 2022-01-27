@@ -1,3 +1,4 @@
+
 # UniProtClient
 Python classes in this package allow convenient access to [UniProt](https://www.uniprot.org/) for protein ID mapping and information retrieval.
 
@@ -34,9 +35,6 @@ mapping_df = gi_2_acc_mappig.map_protein_ids(gi_numbers)
 uniprot_accessions = mapping_df['To'].tolist()
 ```
 
-    100%|██████████| 3/3 [00:10<00:00,  3.45s/it]
-
-
 
 ```python
 mapping_df
@@ -46,6 +44,7 @@ mapping_df
 
 
 <div>
+
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -58,12 +57,12 @@ mapping_df
     <tr>
       <th>0</th>
       <td>224586929</td>
-      <td>B4DZW8</td>
+      <td>Q9Y2R2</td>
     </tr>
     <tr>
       <th>1</th>
       <td>224586929</td>
-      <td>Q9Y2R2</td>
+      <td>B4DZW8</td>
     </tr>
     <tr>
       <th>2</th>
@@ -77,7 +76,7 @@ mapping_df
 
 
 ### Protein information
-UniProt provides a variety of protein specific information, such as protein family, organism, function, EC-number, and many more.
+UniProt provides a varity of protein specific information, such as protein family, organism, function, EC-number, and many more.
 The class *UniProtProteinInfo* is initialized with [column identifier](https://www.uniprot.org/help/uniprotkb%5Fcolumn%5Fnames) specifing the requested information. Spaces in column names should be substituted by underscores.  
 If no columns are specified the default is used:
 
@@ -105,13 +104,8 @@ info = UniProtProteinInfo()
 info.load_protein_info(["B4DZW8", "Q9Y2R2", "P51452"])
 ```
 
-    100%|██████████| 3/3 [00:01<00:00,  1.51it/s]
-
-
-
-
-
 <div>
+
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -124,9 +118,15 @@ info.load_protein_info(["B4DZW8", "Q9Y2R2", "P51452"])
       <th>gene_names(primary)</th>
       <th>gene_ontology(molecular_function)</th>
       <th>primary_name</th>
+      <th>subfamily</th>
+      <th>family</th>
+      <th>superfamily</th>
     </tr>
     <tr>
       <th>entry</th>
+      <th></th>
+      <th></th>
+      <th></th>
       <th></th>
       <th></th>
       <th></th>
@@ -139,17 +139,6 @@ info.load_protein_info(["B4DZW8", "Q9Y2R2", "P51452"])
   </thead>
   <tbody>
     <tr>
-      <th>Q9Y2R2</th>
-      <td>PTN22_HUMAN</td>
-      <td>Tyrosine-protein phosphatase non-receptor type...</td>
-      <td>Protein-tyrosine phosphatase family, Non-recep...</td>
-      <td>Homo sapiens (Human)</td>
-      <td>3.1.3.48</td>
-      <td>PTPN22</td>
-      <td>kinase binding [GO:0019900]; non-membrane span...</td>
-      <td>Tyrosine-protein phosphatase non-receptor type 22</td>
-    </tr>
-    <tr>
       <th>P51452</th>
       <td>DUS3_HUMAN</td>
       <td>Dual specificity protein phosphatase 3 (EC 3.1...</td>
@@ -159,6 +148,23 @@ info.load_protein_info(["B4DZW8", "Q9Y2R2", "P51452"])
       <td>DUSP3</td>
       <td>cytoskeletal protein binding [GO:0008092]; MAP...</td>
       <td>Dual specificity protein phosphatase 3</td>
+      <td>Non-receptor class dual specificity subfamily</td>
+      <td>Protein-tyrosine phosphatase family</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <th>Q9Y2R2</th>
+      <td>PTN22_HUMAN</td>
+      <td>Tyrosine-protein phosphatase non-receptor type...</td>
+      <td>Protein-tyrosine phosphatase family, Non-recep...</td>
+      <td>Homo sapiens (Human)</td>
+      <td>3.1.3.48</td>
+      <td>PTPN22</td>
+      <td>kinase binding [GO:0019900]; non-membrane span...</td>
+      <td>Tyrosine-protein phosphatase non-receptor type 22</td>
+      <td>Non-receptor class 4 subfamily</td>
+      <td>Protein-tyrosine phosphatase family</td>
+      <td>-</td>
     </tr>
     <tr>
       <th>B4DZW8</th>
@@ -170,6 +176,118 @@ info.load_protein_info(["B4DZW8", "Q9Y2R2", "P51452"])
       <td></td>
       <td>protein tyrosine phosphatase activity [GO:0004...</td>
       <td>cDNA FLJ55436, highly similar to Tyrosine-prot...</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+#### Protein Families
+If downloaded, the string 'protein_families' is parsed automatically. It is split into the categories subfamily, family
+and superfamily.
+Some proteins belong to multiple families. The default behaviour is to extract the individual categories and merge them
+into a `; ` seperated string.
+
+
+```python
+# Extending column width. Not important for extraction.
+import pandas as pd
+pd.set_option('max_colwidth', 400)
+```
+
+
+```python
+info = UniProtProteinInfo(merge_multi_fam_strings=True)  # Default behaviour
+info.load_protein_info(["Q923J1"])[["organism", "subfamily", "family", "superfamily"]]
+```
+
+
+      0%|          | 0/1 [00:00<?, ?it/s]
+
+
+
+
+
+<div>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>organism</th>
+      <th>subfamily</th>
+      <th>family</th>
+      <th>superfamily</th>
+    </tr>
+    <tr>
+      <th>entry</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Q923J1</th>
+      <td>Mus musculus (Mouse)</td>
+      <td>ALPK subfamily;  LTrpC subfamily</td>
+      <td>Alpha-type protein kinase family; Transient receptor (TC 1.A.4) family</td>
+      <td>Protein kinase superfamily; -</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+ Setting `merge_multi_fam_strings` to `False` will create for each family association an
+individual row where remaining protein information are identical.
+
+
+```python
+info = UniProtProteinInfo(merge_multi_fam_strings=False)
+info.load_protein_info(["Q923J1"])[["organism", "subfamily", "family", "superfamily"]]
+```
+
+
+<div>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>organism</th>
+      <th>subfamily</th>
+      <th>family</th>
+      <th>superfamily</th>
+    </tr>
+    <tr>
+      <th>entry</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Q923J1</th>
+      <td>Mus musculus (Mouse)</td>
+      <td>ALPK subfamily</td>
+      <td>Alpha-type protein kinase family</td>
+      <td>Protein kinase superfamily</td>
+    </tr>
+    <tr>
+      <th>Q923J1</th>
+      <td>Mus musculus (Mouse)</td>
+      <td>LTrpC subfamily</td>
+      <td>Transient receptor (TC 1.A.4) family</td>
+      <td>None</td>
     </tr>
   </tbody>
 </table>

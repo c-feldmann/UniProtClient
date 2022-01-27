@@ -5,7 +5,8 @@ import numpy as np
 import sys
 from typing import *
 from time import sleep
-import warnings as warn
+from UniProtClient.parsing import simple_name_from
+from UniProtClient.parsing import extract_families
 
 
 class _UniProtClient:
@@ -86,57 +87,19 @@ class UniProtMapper(_UniProtClient):
         return pd.concat([valid_mappings, invalid_mapping])
 
 
-def simple_name_from(long_name):
-    """ Extracts primary name from uniprot string containing all names.
-
-    Additional names are given in brackets and parantheses
-    """
-    out = []
-    buffer = []
-    in_bracket = 0
-    in_square_bracket = 0
-    for letter in long_name:
-        if letter == "(":
-            in_bracket += 1
-            buffer.append(letter)
-        elif letter == ")":
-            in_bracket -= 1
-            buffer.append(letter)
-        elif letter == "[":
-            in_square_bracket += 1
-            buffer.append(letter)
-        elif letter == "]":
-            in_square_bracket -= 1
-            buffer.append(letter)
-        else:
-            # If not in bracket
-            if in_bracket == 0 and in_square_bracket == 0:
-                if letter == " ":
-                    buffer.append(letter)
-                elif buffer:
-                    out.extend(buffer)
-                    buffer = []
-                    out.append(letter)
-                else:
-                    out.append(letter)
-            else:
-                buffer.append(letter)
-    if in_bracket != 0 or in_square_bracket != 0:
-        warn.warn(f"Error processing: {long_name}\n Returning input name!")
-        return long_name
-    return "".join(out)
-
-
 class UniProtProteinInfo(_UniProtClient):
     """ A class for information retrieval about proteins form UniProt.
     """
-    def __init__(self, column_list: Optional[List[str]] = None):
+    def __init__(self, column_list: Optional[List[str]] = None, merge_multi_fam_strings: bool = True):
         """
 
         Parameters
         ----------
-        column_list: strings of column identifiers. [1]
-
+        column_list: List[str]
+            list of strings with column identifiers. [1]
+        merge_multi_fam_strings: bool, default = True
+            True: when a protein belongs to multiple families: merge names.
+            False: Protein row is cloned and each row contains one family association.
 
         References
         __________
@@ -150,6 +113,7 @@ class UniProtProteinInfo(_UniProtClient):
         if "id" not in column_list:
             column_list.append("id")
         self.columns = ",".join(column_list)
+        self.merge_multi_fam_strings = merge_multi_fam_strings
 
     @staticmethod
     def _reformat_column_string(column_name: str, lower=True) -> str:
@@ -188,12 +152,40 @@ class UniProtProteinInfo(_UniProtClient):
                     print("{}: {}".format(row["Enty"], err), file=sys.stderr)
                 name_list.append(primary_name)
             valid_entry_df["primary_name"] = name_list
-        invalid_ids = set(protein_list) - set(valid_entry_df["Entry"].unique())
+        if valid_entry_df.shape[0]:
+            invalid_ids = set(protein_list) - set(valid_entry_df["Entry"].unique())
+        else:
+            invalid_ids = set(protein_list)
         invalid_entry_df = pd.DataFrame()
         invalid_entry_df["Entry"] = sorted(invalid_ids)
-
-        combined_df = pd.concat([valid_entry_df, invalid_entry_df])
+        if valid_entry_df.shape[0]:
+            combined_df = pd.concat([valid_entry_df, invalid_entry_df])
+        else:
+            combined_df = invalid_entry_df
         column_name_mapping = {old_name: self._reformat_column_string(old_name) for old_name in combined_df.columns}
         combined_df.rename(columns=column_name_mapping, inplace=True)
         combined_df.set_index("entry", inplace=True)
+
+        # Handling protein-families:
+        if "protein_families" in combined_df.columns:
+            combined_df.loc[combined_df.protein_families.isna(), "protein_families"] = ""
+            extracted_family_list = []
+            for entry, row in combined_df.iterrows():
+                fam_dict_list = extract_families(row["protein_families"])
+
+                if self.merge_multi_fam_strings:
+                    fam_dict = {"entry": str(entry)}
+                    for category in ["subfamily", "family", "superfamily"]:
+                        merged_name = [x[category] if x[category] else "-" for x in fam_dict_list]
+                        merged_name = "; ".join(merged_name)
+                        fam_dict[category] = merged_name
+                    extracted_family_list.append(fam_dict)
+                else:
+                    for fam_dict in fam_dict_list:
+                        fam_dict["entry"] = str(entry)
+                        extracted_family_list.append(fam_dict)
+            if extracted_family_list:
+                extracted_family_df = pd.DataFrame(extracted_family_list)
+                extracted_family_df.set_index("entry", inplace=True)
+                combined_df = combined_df.merge(extracted_family_df, left_index=True, right_index=True, how="left")
         return combined_df
