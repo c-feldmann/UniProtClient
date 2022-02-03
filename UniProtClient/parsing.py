@@ -74,14 +74,14 @@ def extract_families(fam_string: str) -> List[Dict[str, Optional[str]]]:
         return [{"subfamily": None, "family": None, "superfamily": None}]
 
     # Splitting by "family;" instead of ";" avoids splitting families with ";" in the name. Not perfect but it works.
-    fam_group_list = fam_string.split("family;")
+    fam_group_list = fam_string.split("family; ")
     # Reattaching 'family' without ';'. Last element does not end with "family;" therefore no reattachment.
     fam_group_list = [f"{x}family" for x in fam_group_list[:-1]] + [fam_group_list[-1]]
-    fam_group_list = [x.strip() for x in fam_group_list] # Removing excess spaces at start and end.
+    fam_group_list = [x.strip() for x in fam_group_list]  # Removing excess spaces at start and end.
 
     out_dict_list = []
     for fam_group in fam_group_list:
-        family_list = fam_group.split("family,")
+        family_list = fam_group.split("family, ")
         family_list = [f"{x}family" for x in family_list[:-1]] + [family_list[-1]]
 
         fam_dict = {}

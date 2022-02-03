@@ -44,7 +44,6 @@ mapping_df
 
 
 <div>
-
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -194,22 +193,16 @@ into a `; ` seperated string.
 
 
 ```python
-# Extending column width. Not important for extraction.
+# Extending column with. Not important for extraction.
 import pandas as pd
 pd.set_option('max_colwidth', 400)
 ```
 
 
 ```python
-info = UniProtProteinInfo(merge_multi_fam_strings=True)  # Default behaviour
+info = UniProtProteinInfo(merge_multi_fam_strings="string")  # Default behaviour
 info.load_protein_info(["Q923J1"])[["organism", "subfamily", "family", "superfamily"]]
 ```
-
-
-      0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
 
 
 <div>
@@ -235,7 +228,7 @@ info.load_protein_info(["Q923J1"])[["organism", "subfamily", "family", "superfam
     <tr>
       <th>Q923J1</th>
       <td>Mus musculus (Mouse)</td>
-      <td>ALPK subfamily;  LTrpC subfamily</td>
+      <td>ALPK subfamily; LTrpC subfamily</td>
       <td>Alpha-type protein kinase family; Transient receptor (TC 1.A.4) family</td>
       <td>Protein kinase superfamily; -</td>
     </tr>
@@ -245,18 +238,66 @@ info.load_protein_info(["Q923J1"])[["organism", "subfamily", "family", "superfam
 
 
 
- Setting `merge_multi_fam_strings` to `False` will create for each family association an
+Setting `merge_multi_fam_strings` to `'list'` will arrange each family association in a list. To keep types consitent this applies to protiens with only one family as well.
+
+
+```python
+info = UniProtProteinInfo(merge_multi_fam_strings="list")  # Default behaviour
+info.load_protein_info(["Q923J1", "Q9Y2R2"])[["organism", "subfamily", "family", "superfamily"]]
+```
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>organism</th>
+      <th>subfamily</th>
+      <th>family</th>
+      <th>superfamily</th>
+    </tr>
+    <tr>
+      <th>entry</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Q923J1</th>
+      <td>Mus musculus (Mouse)</td>
+      <td>[ALPK subfamily, LTrpC subfamily]</td>
+      <td>[Alpha-type protein kinase family, Transient receptor (TC 1.A.4) family]</td>
+      <td>[Protein kinase superfamily, None]</td>
+    </tr>
+    <tr>
+      <th>Q9Y2R2</th>
+      <td>Homo sapiens (Human)</td>
+      <td>[Non-receptor class 4 subfamily]</td>
+      <td>[Protein-tyrosine phosphatase family]</td>
+      <td>[None]</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+ Setting `merge_multi_fam_strings` to `None` will create for each family association an
 individual row where remaining protein information are identical.
 
 
 ```python
-info = UniProtProteinInfo(merge_multi_fam_strings=False)
+info = UniProtProteinInfo(merge_multi_fam_strings=None)
 info.load_protein_info(["Q923J1"])[["organism", "subfamily", "family", "superfamily"]]
 ```
 
 
 <div>
-
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -293,9 +334,3 @@ info.load_protein_info(["Q923J1"])[["organism", "subfamily", "family", "superfam
 </table>
 </div>
 
-
-
-
-```python
-
-```

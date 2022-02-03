@@ -55,7 +55,7 @@ class UniProtMapper(_UniProtClient):
         to_id: target ID string
 
         Examples
-        ________
+        --------
         gi2uniprotmapping =  UniProtMapper("P_GI", "ACC") # This class mapps form GI-number to Uniprot IDs
 
         """
@@ -90,19 +90,23 @@ class UniProtMapper(_UniProtClient):
 class UniProtProteinInfo(_UniProtClient):
     """ A class for information retrieval about proteins form UniProt.
     """
-    def __init__(self, column_list: Optional[List[str]] = None, merge_multi_fam_strings: bool = True):
+    def __init__(self, column_list: Optional[List[str]] = None, merge_multi_fam_strings: Optional[str] = "string",
+                 tqdm: bool = True):
         """
 
         Parameters
         ----------
         column_list: List[str]
             list of strings with column identifiers. [1]
-        merge_multi_fam_strings: bool, default = True
-            True: when a protein belongs to multiple families: merge names.
-            False: Protein row is cloned and each row contains one family association.
+        merge_multi_fam_strings: str, default = "string"
+            'sting': when a protein belongs to multiple families: merge names.
+            'list': families will be stored as list. Including proteins from only one family.
+            None: Protein row is cloned and each row contains one family association.
+        tqdm: bool
+            show tqdm progress bar
 
         References
-        __________
+        ----------
         [1] https://www.uniprot.org/help/uniprotkb%5Fcolumn%5Fnames
         """
         super().__init__("https://www.uniprot.org/uniprot/")
@@ -113,7 +117,11 @@ class UniProtProteinInfo(_UniProtClient):
         if "id" not in column_list:
             column_list.append("id")
         self.columns = ",".join(column_list)
-        self.merge_multi_fam_strings = merge_multi_fam_strings
+        if merge_multi_fam_strings in ["string", "list", None, False]:
+            self.merge_multi_fam_strings = merge_multi_fam_strings
+        else:
+            raise NotImplementedError(f"Invalid choice for 'merge_multi_fam_strings': {self.merge_multi_fam_strings}")
+        self.tqdm = tqdm
 
     @staticmethod
     def _reformat_column_string(column_name: str, lower=True) -> str:
@@ -130,7 +138,7 @@ class UniProtProteinInfo(_UniProtClient):
 
     def load_protein_info(self, protein_list: List[str], chunk_size: int = 200, sleeptime=0) -> pd.DataFrame:
         final_dict_list = []
-        with tqdm(total=len(protein_list)) as p_bar:
+        with tqdm(total=len(protein_list), disable=not self.tqdm) as p_bar:
             for protein_chunk in self._chunkwise(protein_list, chunk_size):
                 joined_proteins = "+OR+accession:".join(protein_chunk)
                 server_query = f"?query=accession:{joined_proteins}&format=tab&columns={self.columns}"
@@ -176,8 +184,15 @@ class UniProtProteinInfo(_UniProtClient):
                 if self.merge_multi_fam_strings:
                     fam_dict = {"entry": str(entry)}
                     for category in ["subfamily", "family", "superfamily"]:
-                        merged_name = [x[category] if x[category] else "-" for x in fam_dict_list]
-                        merged_name = "; ".join(merged_name)
+                        if self.merge_multi_fam_strings == "string":
+                            merged_name = [x[category] if x[category] else "-" for x in fam_dict_list]
+                            merged_name = "; ".join(merged_name)
+                        elif self.merge_multi_fam_strings == "list":
+                            merged_name = [x[category] if x[category] else None for x in fam_dict_list]
+                        else:
+                            raise NotImplementedError(f"Invalid choice for 'merge_multi_fam_strings':"
+                                                      f" {self.merge_multi_fam_strings}")
+
                         fam_dict[category] = merged_name
                     extracted_family_list.append(fam_dict)
                 else:
