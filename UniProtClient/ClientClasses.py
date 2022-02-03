@@ -90,7 +90,7 @@ class UniProtMapper(_UniProtClient):
 class UniProtProteinInfo(_UniProtClient):
     """ A class for information retrieval about proteins form UniProt.
     """
-    def __init__(self, column_list: Optional[List[str]] = None, merge_multi_fam_strings: Optional[str] = "string",
+    def __init__(self, column_list: Optional[List[str]] = None, merge_multi_fam_associations: Optional[str] = "string",
                  tqdm: bool = True):
         """
 
@@ -117,10 +117,11 @@ class UniProtProteinInfo(_UniProtClient):
         if "id" not in column_list:
             column_list.append("id")
         self.columns = ",".join(column_list)
-        if merge_multi_fam_strings in ["string", "list", None, False]:
-            self.merge_multi_fam_strings = merge_multi_fam_strings
+        if merge_multi_fam_associations in ["string", "list", None, False]:
+            self.merge_multi_fam_associations = merge_multi_fam_associations
         else:
-            raise NotImplementedError(f"Invalid choice for 'merge_multi_fam_strings': {self.merge_multi_fam_strings}")
+            raise NotImplementedError(f"Invalid choice for 'merge_multi_fam_strings': "
+                                      f"{self.merge_multi_fam_associations}")
         self.tqdm = tqdm
 
     @staticmethod
@@ -181,17 +182,19 @@ class UniProtProteinInfo(_UniProtClient):
             for entry, row in combined_df.iterrows():
                 fam_dict_list = extract_families(row["protein_families"])
 
-                if self.merge_multi_fam_strings:
+                if self.merge_multi_fam_associations:
                     fam_dict = {"entry": str(entry)}
                     for category in ["subfamily", "family", "superfamily"]:
-                        if self.merge_multi_fam_strings == "string":
+                        if self.merge_multi_fam_associations == "string":
                             merged_name = [x[category] if x[category] else "-" for x in fam_dict_list]
                             merged_name = "; ".join(merged_name)
-                        elif self.merge_multi_fam_strings == "list":
+                            if merged_name == "-":
+                                merged_name = None
+                        elif self.merge_multi_fam_associations == "list":
                             merged_name = [x[category] if x[category] else None for x in fam_dict_list]
                         else:
                             raise NotImplementedError(f"Invalid choice for 'merge_multi_fam_strings':"
-                                                      f" {self.merge_multi_fam_strings}")
+                                                      f" {self.merge_multi_fam_associations}")
 
                         fam_dict[category] = merged_name
                     extracted_family_list.append(fam_dict)

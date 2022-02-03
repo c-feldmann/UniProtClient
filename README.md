@@ -149,7 +149,7 @@ info.load_protein_info(["B4DZW8", "Q9Y2R2", "P51452"])
       <td>Dual specificity protein phosphatase 3</td>
       <td>Non-receptor class dual specificity subfamily</td>
       <td>Protein-tyrosine phosphatase family</td>
-      <td>-</td>
+      <td>None</td>
     </tr>
     <tr>
       <th>Q9Y2R2</th>
@@ -163,7 +163,7 @@ info.load_protein_info(["B4DZW8", "Q9Y2R2", "P51452"])
       <td>Tyrosine-protein phosphatase non-receptor type 22</td>
       <td>Non-receptor class 4 subfamily</td>
       <td>Protein-tyrosine phosphatase family</td>
-      <td>-</td>
+      <td>None</td>
     </tr>
     <tr>
       <th>B4DZW8</th>
@@ -175,9 +175,9 @@ info.load_protein_info(["B4DZW8", "Q9Y2R2", "P51452"])
       <td></td>
       <td>protein tyrosine phosphatase activity [GO:0004...</td>
       <td>cDNA FLJ55436, highly similar to Tyrosine-prot...</td>
-      <td>-</td>
-      <td>-</td>
-      <td>-</td>
+      <td>None</td>
+      <td>None</td>
+      <td>None</td>
     </tr>
   </tbody>
 </table>
@@ -238,7 +238,8 @@ info.load_protein_info(["Q923J1"])[["organism", "subfamily", "family", "superfam
 
 
 
-Setting `merge_multi_fam_strings` to `'list'` will arrange each family association in a list. To keep types consitent this applies to protiens with only one family as well.
+Setting `merge_multi_fam_strings` to `'list'` will arrange each family association in a list.
+To keep types consistent this applies to proteins with only one family as well.
 
 
 ```python
