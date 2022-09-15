@@ -109,7 +109,7 @@ class UniProtProteinInfo(_UniProtClient):
         ----------
         [1] https://www.uniprot.org/help/uniprotkb%5Fcolumn%5Fnames
         """
-        super().__init__("https://www.uniprot.org/uniprot/")
+        super().__init__("https://rest.uniprot.org/uniprotkb/")
         if column_list is None:
             column_list = ["id", "entry_name", "protein_names", "families", "organism", "ec", "genes(PREFERRED)",
                            "go(molecular_function)"]
@@ -142,7 +142,7 @@ class UniProtProteinInfo(_UniProtClient):
         with tqdm(total=len(protein_list), disable=not self.tqdm) as p_bar:
             for protein_chunk in self._chunkwise(protein_list, chunk_size):
                 joined_proteins = "+OR+accession:".join(protein_chunk)
-                server_query = f"?query=accession:{joined_proteins}&format=tab&columns={self.columns}"
+                server_query = f"search?query=accession:{joined_proteins}&format=tsv&columns={self.columns}"
                 req = "".join([self._base_url, server_query])
                 server_response = self._query(req)
                 server_response_formatted = self._response2dictlist(server_response)
