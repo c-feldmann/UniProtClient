@@ -1,17 +1,7 @@
 
 # UniProtClient
+## IMPORTANT! Mapping is UNDER CONSTRUCTRION and not working
 Python classes in this package allow convenient access to [UniProt](https://www.uniprot.org/) for protein ID mapping and information retrieval.
-
-## Installation in Conda
-If not already installed, install **pip** and **git**:  
-```
-conda install git
-conda install pip
-```
-Then install via pip:
-```
-pip install git+git://github.com/c-feldmann/UniProtClient
-```
 
 ## Usage
 ### Mapping

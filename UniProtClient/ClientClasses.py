@@ -59,10 +59,10 @@ class UniProtMapper(_UniProtClient):
         gi2uniprotmapping =  UniProtMapper("P_GI", "ACC") # This class mapps form GI-number to Uniprot IDs
 
         """
-        super().__init__("https://www.uniprot.org/uploadlists/")
+        super().__init__("https://rest.uniprot.org/id-mapping")
         self._from_id = from_id
         self._to_id = to_id
-        self._data_format = "tab"
+        self._data_format = "tsv"
 
     def map_protein_ids(self, protein_list: List[str], chunk_size: int = 500) -> pd.DataFrame:
         final_dict_list = []
@@ -73,7 +73,9 @@ class UniProtMapper(_UniProtClient):
                 chunklist = "+".join(chunk)
                 server_query = f"?from={self._from_id}&to={self._to_id}&format={self._data_format}&query={chunklist}"
                 req = "".join([self._base_url, server_query])
+                print(req)
                 server_response = self._query(req)
+                print(server_response)
                 server_response_formatted = self._response2dictlist(server_response)
                 final_dict_list.extend(server_response_formatted)
                 pbar.update(len(chunk))
@@ -107,12 +109,12 @@ class UniProtProteinInfo(_UniProtClient):
 
         References
         ----------
-        [1] https://www.uniprot.org/help/uniprotkb%5Fcolumn%5Fnames
+        [1] https://www.uniprot.org/help/return_fields
         """
         super().__init__("https://rest.uniprot.org/uniprotkb/")
         if column_list is None:
-            column_list = ["id", "entry_name", "protein_names", "families", "organism", "ec", "genes(PREFERRED)",
-                           "go(molecular_function)"]
+            column_list = ["accession", "id", "protein_name", "protein_families", "organism_name", "organism_id",
+                           "ec", "gene_primary", "go_f"]
         column_list = [self._reformat_column_string(col_id, lower=False) for col_id in column_list]
         if "id" not in column_list:
             column_list.append("id")
@@ -142,7 +144,7 @@ class UniProtProteinInfo(_UniProtClient):
         with tqdm(total=len(protein_list), disable=not self.tqdm) as p_bar:
             for protein_chunk in self._chunkwise(protein_list, chunk_size):
                 joined_proteins = "+OR+accession:".join(protein_chunk)
-                server_query = f"search?query=accession:{joined_proteins}&format=tsv&columns={self.columns}"
+                server_query = f"search?query=accession:{joined_proteins}&format=tsv&fields={self.columns}"
                 req = "".join([self._base_url, server_query])
                 server_response = self._query(req)
                 server_response_formatted = self._response2dictlist(server_response)
@@ -151,14 +153,14 @@ class UniProtProteinInfo(_UniProtClient):
                 sleep(sleeptime)
 
         valid_entry_df = pd.DataFrame(final_dict_list)
-        if "protein_names" in self.columns:
+        if "protein_name" in self.columns:
             name_list = []
             for idx, row in valid_entry_df.iterrows():
                 try:
                     primary_name = simple_name_from(row["Protein names"])
                 except AssertionError as err:
                     primary_name = None
-                    print("{}: {}".format(row["Enty"], err), file=sys.stderr)
+                    print("{}: {}".format(row["Entry"], err), file=sys.stderr)
                 name_list.append(primary_name)
             valid_entry_df["primary_name"] = name_list
         if valid_entry_df.shape[0]:
